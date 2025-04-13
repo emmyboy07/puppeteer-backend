@@ -1,42 +1,39 @@
-# Use the official Puppeteer image as the base
+# Start from Puppeteer base image
 FROM ghcr.io/puppeteer/puppeteer:19.7.2
 
-# Switch to root user to avoid permission issues during apt-get
-USER root
-
-# Set environment variables to skip Chromium download and use the stable version of Google Chrome
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
-
-# Create the necessary directories for apt-get
+# Install dependencies and set up the environment
 RUN mkdir -p /var/lib/apt/lists/partial
+
+# Add Google's GPG key to solve the key issue
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | tee /etc/apt/trusted.gpg.d/google.asc
 
 # Clean up apt list and update repositories
 RUN rm -rf /var/lib/apt/lists/* && apt-get update
 
 # Install necessary dependencies (ensure apt sources are configured correctly)
 RUN apt-get install -y \
-    wget \
-    curl \
-    gnupg2 \
-    ca-certificates \
-    unzip \
-    && apt-get clean
+  curl \
+  gnupg2 \
+  ca-certificates \
+  apt-transport-https \
+  lsb-release
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+# Install Google Chrome
+RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb && \
+  apt-get install -y ./google-chrome-stable_current_amd64.deb && \
+  rm google-chrome-stable_current_amd64.deb
 
-# Copy package.json and package-lock.json (if present) to the working directory
-COPY package*.json ./
+# Set up your working directory
+WORKDIR /app
 
-# Install dependencies with npm
-RUN npm ci
-
-# Copy all the files to the working directory
+# Copy the rest of the files (adjust as necessary)
 COPY . .
 
-# Expose the port that the app will run on (default to 10000 in your code)
-EXPOSE 10000
+# Install necessary packages (assuming you are using Node.js)
+RUN npm install
 
-# Run the Node.js application
-CMD ["node", "index.js"]
+# Expose necessary ports
+EXPOSE 3000
+
+# Start your app (adjust according to your app's start command)
+CMD ["npm", "start"]
