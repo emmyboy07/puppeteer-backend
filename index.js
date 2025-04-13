@@ -8,7 +8,6 @@ require("dotenv").config(); // Load environment variables from .env file
 
 const app = express();
 
-
 app.use(cors());
 
 // Function to configure Puppeteer for scraping (non-headless mode)
@@ -27,6 +26,12 @@ async function createBrowser() {
         ]
     });
     const page = await browser.newPage();
+
+    // Set custom headers for Puppeteer
+    await page.setExtraHTTPHeaders({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Referer': 'https://moviebox.ng/',  // You can adjust this as needed
+    });
 
     // Set the viewport size to match a typical full-screen resolution (e.g., 1920x1080)
     await page.setViewport({ width: 1920, height: 1080 });
@@ -75,8 +80,13 @@ async function fetchMovieData(movie_name) {
         const downloadUrl = `https://moviebox.ng/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}&se=0&ep=0`;
         logging.info(`🌐 Download URL: ${downloadUrl}`);
 
-        // Get download data (JSON response)
-        const response = await axios.get(downloadUrl);
+        // Get download data (JSON response) with custom headers
+        const response = await axios.get(downloadUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://moviebox.ng/',
+            },
+        });
         const jsonData = response.data;
 
         // Filter to show only English subtitles
