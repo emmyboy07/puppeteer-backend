@@ -45,7 +45,7 @@ async function fetchDownloadLink(movie_name) {
 
         const searchUrl = `https://moviebox.ng/web/searchResult?keyword=${encodeURIComponent(movie_name)}`;
         await page.goto(searchUrl);
-        await page.waitForSelector('div.pc-card-btn', { timeout: 60000 });
+        await page.waitForSelector('div.pc-card-btn', { timeout: 90000 });
         console.log("🔎 Search results loaded.");
 
         await page.click('div.pc-card-btn');
