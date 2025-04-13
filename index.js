@@ -2,12 +2,11 @@ const puppeteer = require('puppeteer');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-require('dotenv').config();
 
 const app = express();
 app.use(cors());
 
-// TMDB API Key
+// Hardcoded TMDB API Key
 const TMDB_API_KEY = '1e2d76e7c45818ed61645cb647981e5c';
 
 async function getMovieFromTMDB(tmdb_id) {
@@ -23,17 +22,14 @@ async function getMovieFromTMDB(tmdb_id) {
 
 async function createBrowser() {
     const browser = await puppeteer.launch({
-        headless: true,  // Run the browser in headless mode for production
+        headless: true,  // Run in headless mode for production
         args: [
-            "--disable-setuid-sandbox",
-            "--no-sandbox",
-            "--single-process",
-            "--no-zygote",
+            '--no-sandbox', 
+            '--disable-dev-shm-usage', 
+            '--start-maximized',  // Start maximized for better rendering
+            '--disable-gpu',  // Disable GPU for production environments
+            '--single-process', // Ensure single process mode for cloud environments
         ],
-        executablePath:
-            process.env.NODE_ENV === "production"
-                ? process.env.PUPPETEER_EXECUTABLE_PATH
-                : puppeteer.executablePath(),
     });
 
     const page = await browser.newPage();
@@ -58,9 +54,8 @@ async function fetchDownloadLink(movie_name, expectedYear) {
         let movieUrl;
         let downloadUrl;
 
-        for (let i = 1; i <= 4; i++) {  
+        for (let i = 1; i <= 4; i++) {
             console.log(`➡️ Trying to open result #${i}`);
-
             await page.evaluate((index) => {
                 const result = document.querySelectorAll('div.pc-card-btn')[index - 1];
                 if (result) result.click();
@@ -133,25 +128,32 @@ async function fetchDownloadLink(movie_name, expectedYear) {
 
 app.get("/download", async (req, res) => {
     const tmdb_id = req.query.tmdb_id;
+
     if (!tmdb_id) {
         return res.status(400).json({ error: "Please provide a TMDB movie ID using the 'tmdb_id' query parameter" });
     }
 
-    const movieData = await getMovieFromTMDB(tmdb_id);
-    if (!movieData) {
-        return res.status(500).json({ error: "Could not fetch movie details from TMDB" });
+    try {
+        const movieData = await getMovieFromTMDB(tmdb_id);
+        if (!movieData) {
+            return res.status(500).json({ error: "Could not fetch movie details from TMDB" });
+        }
+
+        const movie_name = movieData.title;
+        const expectedYear = movieData.release_date.split('-')[0];
+
+        const result = await fetchDownloadLink(movie_name, expectedYear);
+
+        if (result.error) {
+            return res.status(404).json(result); // Return "Download unavailable" if no matching results found
+        }
+
+        res.json(result); // Send back movie name, year, and download URL
+    } catch (error) {
+        // Handle any unexpected error here
+        console.error(`Unexpected Error: ${error.message}`);
+        res.status(500).json({ error: "An unexpected error occurred." });
     }
-
-    const movie_name = movieData.title;
-    const expectedYear = movieData.release_date.split('-')[0];
-
-    const result = await fetchDownloadLink(movie_name, expectedYear);
-
-    if (result.error) {
-        return res.status(404).json(result);
-    }
-
-    res.json(result);
 });
 
 const PORT = process.env.PORT || 10000;
