@@ -1,39 +1,31 @@
-# Start from Puppeteer base image
+# Use the official Puppeteer image as the base image
 FROM ghcr.io/puppeteer/puppeteer:19.7.2
 
-# Install dependencies and set up the environment
+# Switch to root user to install dependencies
+USER root
+
+# Create necessary directories with root permissions
 RUN mkdir -p /var/lib/apt/lists/partial
 
-# Add Google's GPG key to solve the key issue
-RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | tee /etc/apt/trusted.gpg.d/google.asc
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Clean up apt list and update repositories
-RUN rm -rf /var/lib/apt/lists/* && apt-get update
-
-# Install necessary dependencies (ensure apt sources are configured correctly)
-RUN apt-get install -y \
-  curl \
-  gnupg2 \
-  ca-certificates \
-  apt-transport-https \
-  lsb-release
-
-# Install Google Chrome
-RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb && \
-  apt-get install -y ./google-chrome-stable_current_amd64.deb && \
-  rm google-chrome-stable_current_amd64.deb
-
-# Set up your working directory
+# Copy the project files into the container
 WORKDIR /app
-
-# Copy the rest of the files (adjust as necessary)
 COPY . .
 
-# Install necessary packages (assuming you are using Node.js)
+# Install project dependencies (if any, assuming a Node.js app for Puppeteer)
 RUN npm install
 
-# Expose necessary ports
+# Set the environment variable for Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+
+# Expose the necessary port for the app (optional)
 EXPOSE 3000
 
-# Start your app (adjust according to your app's start command)
+# Start the app (modify as needed based on your app)
 CMD ["npm", "start"]
