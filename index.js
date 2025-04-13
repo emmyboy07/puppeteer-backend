@@ -14,24 +14,18 @@ app.use(cors());
 async function createBrowser() {
     const browser = await puppeteer.launch({
         executablePath:
-        process.env.NODE_ENV === "production"
-           ? process.env.PUPPETEER_EXECUTABLE_PATH
-           : puppeteer.executablePath(),
-          
-        headless: true,  // Set to false to see the browser
+            process.env.NODE_ENV === "production"
+                ? process.env.PUPPETEER_EXECUTABLE_PATH
+                : puppeteer.executablePath(),
+
+        headless: true, // Set to false to see the browser
         args: [
-            "--no-sandbox", 
-            "--disable-dev-shm-usage", 
-            "--start-maximized"  // Maximize the window on launch
-        ]
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--start-maximized", // Maximize the window on launch
+        ],
     });
     const page = await browser.newPage();
-
-    // Set custom headers for Puppeteer
-    await page.setExtraHTTPHeaders({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Referer': 'https://moviebox.ng/',  // You can adjust this as needed
-    });
 
     // Set the viewport size to match a typical full-screen resolution (e.g., 1920x1080)
     await page.setViewport({ width: 1920, height: 1080 });
@@ -55,14 +49,14 @@ async function fetchMovieData(movie_name) {
         await page.goto(searchUrl);
 
         // Wait for the search results to load
-        await page.waitForSelector('div.pc-card-btn', { timeout: 60000 });
+        await page.waitForSelector("div.pc-card-btn", { timeout: 60000 });
         logging.info("🔎 Search results loaded.");
 
         // Click on the first result
-        await page.click('div.pc-card-btn');
+        await page.click("div.pc-card-btn");
 
         // Wait for the navigation to the movie details page
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+        await page.waitForNavigation({ waitUntil: "domcontentloaded" });
         logging.info("📄 Movie detail page loaded.");
 
         // Extract the movie URL
@@ -76,21 +70,23 @@ async function fetchMovieData(movie_name) {
         }
         const subjectId = subjectIdMatch[1];
 
-        // Fetch download info from the API
+        // Fetch download info from the API with headers
         const downloadUrl = `https://moviebox.ng/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}&se=0&ep=0`;
         logging.info(`🌐 Download URL: ${downloadUrl}`);
 
-        // Get download data (JSON response) with custom headers
+        // Use Axios to make the request with headers
         const response = await axios.get(downloadUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Referer': 'https://moviebox.ng/',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                Referer: "https://moviebox.ng/",
+                Origin: "https://moviebox.ng/",
             },
         });
+
         const jsonData = response.data;
 
         // Filter to show only English subtitles
-        const englishSubtitles = jsonData.data.captions.filter(caption => caption.lan === 'en');
+        const englishSubtitles = jsonData.data.captions.filter((caption) => caption.lan === "en");
         jsonData.data.captions = englishSubtitles;
 
         logging.info("📦 Download JSON:");
@@ -121,7 +117,7 @@ app.get("/download", async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 5500;  // Use the port provided by the hosting service or 5000 as fallback
+const PORT = process.env.PORT || 10000; // Use the port provided by the hosting service or 10000 as fallback
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
