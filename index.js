@@ -36,7 +36,7 @@ async function createBrowser() {
     return { browser, page };
 }
 
-async function fetchMovieData(movie_name) {
+async function fetchDownloadLink(movie_name) {
     let browser;
     try {
         console.log(`🎬 Searching MovieBox for: ${movie_name}`);
@@ -62,30 +62,9 @@ async function fetchMovieData(movie_name) {
 
         const subjectId = subjectIdMatch[1];
         const downloadUrl = `https://moviebox.ng/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}&se=0&ep=0`;
-        console.log(`🌐 Download URL: ${downloadUrl}`);
+        console.log(`🔗 Logging download URL only:\n➡️ ${downloadUrl}`);
 
-        const downloadPage = await browser.newPage();
-        await downloadPage.setExtraHTTPHeaders({
-            'User-Agent': getRandomUserAgent(),
-            'Referer': 'https://moviebox.ng/'
-        });
-
-        await downloadPage.goto(downloadUrl, { waitUntil: 'domcontentloaded' });
-
-        const jsonData = await downloadPage.evaluate(() => {
-            try {
-                return JSON.parse(document.body.innerText);
-            } catch (e) {
-                return { error: 'Failed to parse JSON' };
-            }
-        });
-
-        // Safely check for captions
-        if (jsonData?.data?.captions && Array.isArray(jsonData.data.captions)) {
-            jsonData.data.captions = jsonData.data.captions.filter(c => c.lan === 'en');
-        }
-
-        return jsonData;
+        return downloadUrl; // Return the direct download URL
 
     } catch (error) {
         console.error(`💥 Error: ${error.message}`);
@@ -103,8 +82,14 @@ app.get("/download", async (req, res) => {
         return res.status(400).json({ error: "Please provide a movie name using the 'movie' query parameter" });
     }
 
-    const result = await fetchMovieData(movie_name);
-    res.json(result);
+    const result = await fetchDownloadLink(movie_name);
+
+    if (result.error) {
+        return res.status(500).json(result); // Return error if no download link found or an issue occurred
+    }
+
+    // Return the direct download URL in the response
+    res.json({ downloadUrl: result });
 });
 
 const PORT = process.env.PORT || 10000;
