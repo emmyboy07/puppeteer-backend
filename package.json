@@ -1,18 +1,17 @@
 {
-  "name": "puppeteer-movie-scraper",
+  "name": "tmdb-to-moviebox-bot",
   "version": "1.0.0",
-  "description": "MovieBox scraper using Puppeteer only",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "axios": "^1.8.4",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "puppeteer": "^19.11.1"
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "puppeteer": "^21.3.8",
+    "readline-sync": "^1.4.10"
   }
 }
