@@ -21,18 +21,35 @@ async function getTMDBData(tmdb_id, type) {
 }
 
 async function createBrowser() {
+    console.log("🚀 Launching browser...");
     const browser = await puppeteer.launch({
-        headless: 'new',
+        executablePath: process.env.NODE_ENV === 'production'
+            ? process.env.PUPPETEER_EXECUTABLE_PATH
+            : puppeteer.executablePath(),
+        headless: true,
         args: [
             '--no-sandbox',
             '--disable-dev-shm-usage',
-            '--start-maximized',
+            '--disable-setuid-sandbox',
             '--disable-gpu',
             '--single-process',
         ],
     });
+
+    if (!browser) throw new Error("❌ Browser did not launch");
+
     const page = await browser.newPage();
-    await page.setViewport({ width: 1920, height: 1080 });
+
+    try {
+        if (!page.isClosed()) {
+            console.log("🖥 Setting viewport...");
+            await page.setViewport({ width: 1920, height: 1080 });
+            console.log("✅ Viewport set");
+        }
+    } catch (err) {
+        console.warn('⚠️ Could not set viewport:', err.message);
+    }
+
     return { browser, page };
 }
 
@@ -130,7 +147,7 @@ app.get("/download", async (req, res) => {
     const title = type === 'tv' ? tmdbData.name : tmdbData.title;
     const expectedYear = type === 'tv' ? null : tmdbData.release_date.split('-')[0];
 
-    const result = await fetchDownloadLink(title, expectedYear, matchYear = type === 'movie');
+    const result = await fetchDownloadLink(title, expectedYear, type === 'movie');
 
     if (result.error) {
         return res.status(404).json(result);
@@ -143,4 +160,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
-
